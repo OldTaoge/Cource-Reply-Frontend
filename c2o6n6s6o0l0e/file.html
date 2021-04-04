@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>文件上传 - OTJSCS</title>
+</head>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dropzone@5.8.1/dist/min/basic.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dropzone@5.8.1/dist/min/dropzone.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables@1.10.18/media/css/jquery.dataTables.min.css">
+<body>
+<div class="container">
+    <div class="row clearfix">
+        <div class="col-md-12 column">
+            <div class="page-header">
+                <h1>
+                    课程 <small id="header-desc"></small>
+                </h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="row clearfix">
+        <div class="col-md-12 column">
+            <table id="main_table" class="table table-bordered table-hover table-striped">
+                <thead>
+                <tr>
+                    <th>
+                        ID
+                    </th>
+                    <th>
+                        Name
+                    </th>
+                    <th>
+                        URI
+                    </th>
+                    <th>
+                        Action
+                    </th>
+                </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+
+    <div class="row clearfix">
+        <div class="col-md-12 column">
+            <div class="form-group">
+                <label for="filesUploader">上传文件</label>
+                <div class="dropzone" id="filesUploader">
+                    <div class="am-text-success dz-message">
+                        将文件拖拽到此处<br>或点此打开文件管理器选择文件
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables@1.10.18/media/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dropzone@5.8.1/dist/min/dropzone.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/keycloak-js@12.0.4/dist/keycloak.min.js"></script>
+
+<script>
+    Dropzone.autoDiscover = false;
+
+    const keycloak = new Keycloak({
+        "clientId": "jun-sen-web",
+        "url": "https://openid.oldtaoge.space/oauth2",
+        "realm": "master",
+        "enableLogging": true
+    });
+
+    keycloak.init({
+        "onLoad": 'login-required'
+    }).then(function(authenticated) {
+        if(!authenticated) {
+            window.location.reload();
+        } else {
+            console.log('Authenticated');
+            app().init();
+        }
+    });
+
+    const API_PREFIX = "https://api-jun-sen.edu.oldtaoge.space:21286/apiv1/";
+    // const API_PREFIX = "http://localhost:8080/";
+    let tools = function () {
+        /**
+         * 内部工具函数
+         * 得到url中?=参数
+         * @param name
+         * @returns {string|null}
+         */
+        function getUrlParam(name) {
+            let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+            let r = window.location.search.substr(1).match(reg);  //匹配目标参数
+            if (r != null) return unescape(r[2]); return null; //返回参数值
+        }
+
+
+        return {
+            "getUrlParam": getUrlParam
+        }
+    };
+    let app = function () {
+        let _id = tools().getUrlParam("id");
+
+        function init() {
+            $.get(API_PREFIX + "lessons/" + _id, function (response) {
+                GINFO = response.data;
+                console.log(GINFO)
+                $("#header-desc")[0].innerText = GINFO.subject + " " + GINFO.content;
+            });
+            initDatatable();
+            initDropzone();
+        }
+
+        function initDatatable()
+        {
+            $('#main_table').DataTable( {
+                "paging": true,
+                "info": true,
+                "lengthChange": false,
+                "ordering": false,
+                "processing": true,
+                "searching": false,
+                "serverSide": true,
+                "deferRender": true,
+                ajax: {
+                    url: API_PREFIX + 'lessons/files/' + _id,
+                    type: 'GET'
+                },
+                columns: [
+                    { data: 'name',
+                        render: function (data, type, row, meta) {
+                            return tools().getUrlParam("id")
+                        }},
+                    { data: 'name' },
+                    { data: 'path' },
+                    { data: 'name',
+                        render: function (data, type, row, meta) {
+                            // console.log(data, type, row, meta)
+                            return "<a href='javascript:void(0)' onclick='app().deleteFile(" + meta.row +")'>删除</a>"
+                        }
+                    }
+                ]
+            });
+
+        }
+
+        function initDropzone() {
+            const myDropzone = new Dropzone("#filesUploader", {
+                url: API_PREFIX + "upload/file/" + _id,
+                headers: {
+                    "Authorization": "Bearer " + keycloak.token
+                },
+                timeout: 3600000,
+                maxFilesize: 1024,
+                addRemoveLinks: true,
+                method: 'post',
+                parallelUploads: 1
+            });
+        }
+
+
+        function deleteFile(id) {
+            $.ajax({
+                url: API_PREFIX + "upload/file/" + _id + "/" + id,
+                headers: {
+                    "Authorization": "Bearer " + keycloak.token
+                },
+                type: "DELETE",
+                async: false,
+                complete: function (xhr, status) {
+                    location.reload();
+                }
+            })
+        }
+        return {
+            init: init,
+            deleteFile: deleteFile
+        }
+    }
+
+</script>
+</html>

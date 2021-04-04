@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>课程回放|莱西四中</title>
+</head>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables@1.10.18/media/css/jquery.dataTables.min.css">
+<body>
+<div class="container">
+    <div class="row clearfix">
+        <div class="col-md-12 column">
+            <div class="jumbotron well">
+                <h1>
+                    课程视频
+                </h1>
+                <p>
+                    提示:
+                </p>
+                <ul>
+                    <li>本页面为动态页面,之后的课程会添加在这里</li>
+                    <li>导学案和作业下载建议<strong>在浏览器中打开后</strong>下载</li>
+                    <h1><li>微信页面空白的,请选择<strong>用默认浏览器</strong>打开</li></h1>
+                </ul>
+                <p>
+<!--                    <a class="btn btn-primary btn-large" href="#">Learn more</a>-->
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="row clearfix">
+        <div class="col-md-12 column">
+            <table id="main_table" class="table table-bordered table-hover table-striped">
+                <thead>
+                <tr>
+                    <th>科目</th>
+                    <th>日期</th>
+                    <th>内容</th>
+                    <th>回放</th>
+                    <th>文件</th>
+                </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables@1.10.18/media/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"></script>
+<script>
+    $('#main_table').DataTable( {
+        "paging": true,
+        "info": true,
+        "lengthChange": false,
+        "ordering": false,
+        "processing": true,
+        "searching": false,
+        "serverSide": true,
+        "deferRender": true,
+        ajax: {
+            url: 'https://api-jun-sen.edu.oldtaoge.space:21286/apiv1/lessons/dtp',
+            type: 'GET'
+        },
+        columns: [
+            { data: 'subject' },
+            { data: 'date' },
+            { data: 'content' },
+            { data: 'video',
+                render: function (data, type, row, meta) {
+                    if (data === "transcoding") {
+                        return "<p>转码中</p>"
+                    }
+                    else if(data === "none") {
+                        return "<p>未上传</p>"
+                    }
+                    else {
+                        return "<a target='_blank' href=\"play.html?id=" + row.id + "\">回放链接</a>"
+
+                    }
+                }
+            },
+            { data: 'file',
+                render: function (data, type, row, meta) {
+                    let files = JSON.parse(data)
+                    if (files.length === 0)
+                    {
+                        return "无"
+                    }
+                    else
+                    {
+                        return "<a target='_blank' href=\"file.html?id=" + row.id + "\">链接</a>"
+                    }
+                }
+            }
+        ],
+        language:{
+            "processing": "处理中...",
+            "lengthMenu": "显示 _MENU_ 项结果",
+            "zeroRecords": "没有匹配结果",
+            "info": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+            "infoEmpty": "显示第 0 至 0 项结果，共 0 项",
+            "infoFiltered": "(由 _MAX_ 项结果过滤)",
+            "infoPostFix": "",
+            "search": "搜索:",
+            "searchPlaceholder": "搜索...",
+            "url": "",
+            "emptyTable": "表中数据为空",
+            "loadingRecords": "载入中...",
+            "infoThousands": ",",
+            "paginate": {
+                "first": "首页",
+                "previous": "上页",
+                "next": "下页",
+                "last": "末页"
+            },
+            "aria": {
+                "paginate": {
+                    "first": "首页",
+                    "previous": "上页",
+                    "next": "下页",
+                    "last": "末页"
+                },
+                "sortAscending": "以升序排列此列",
+                "sortDescending": "以降序排列此列"
+            },
+            "thousands": "."
+        }
+    } );
+</script>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QKDB6Z9GW8"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-QKDB6Z9GW8');
+</script>
+</html>

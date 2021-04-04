@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>文件下载 - 课程回放|莱西四中</title>
+</head>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dropzone@5.8.1/dist/min/basic.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dropzone@5.8.1/dist/min/dropzone.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables@1.10.18/media/css/jquery.dataTables.min.css">
+<body>
+<div class="container">
+    <div class="row clearfix">
+        <div class="col-md-12 column">
+            <table id="main_table" class="table table-bordered table-hover table-striped">
+                <thead>
+                <tr>
+                    <th>
+                        #
+                    </th>
+                    <th>
+                        名称
+                    </th>
+                    <th>
+                        链接
+                    </th>
+                </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+
+</div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables@1.10.18/media/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dropzone@5.8.1/dist/min/dropzone.min.js"></script>
+<script>
+    const CDN_PREFIX = "https://cdnn-jun-sen.edu.oldtaoge.space/"
+
+    let tools = function () {
+        /**
+         * 内部工具函数
+         * 得到url中?=参数
+         * @param name
+         * @returns {string|null}
+         */
+        function getUrlParam(name) {
+            let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+            let r = window.location.search.substr(1).match(reg);  //匹配目标参数
+            if (r != null) return unescape(r[2]); return null; //返回参数值
+        }
+
+
+        return {
+            "getUrlParam": getUrlParam
+        }
+    };
+    _id = tools().getUrlParam("id")
+
+    $('#main_table').DataTable( {
+        "paging": true,
+        "info": true,
+        "lengthChange": false,
+        "ordering": false,
+        "processing": true,
+        "searching": false,
+        "serverSide": true,
+        "deferRender": true,
+        ajax: {
+            url: 'https://api-jun-sen.edu.oldtaoge.space:21286/apiv1/lessons/files/' + _id,
+            type: 'GET'
+        },
+        columns: [
+            { data: 'name',
+                render: function (data, type, row, meta) {
+                    return tools().getUrlParam("id")
+                }},
+            { data: 'name' },
+            { data: 'path',
+                render: function (data, type, row, meta) {
+                    return "<a href=\"" + CDN_PREFIX + "/" + data + "?raw&proxied" + "\">下载链接</a>"
+                }},
+        ],
+        language:{
+            "processing": "处理中...",
+            "lengthMenu": "显示 _MENU_ 项结果",
+            "zeroRecords": "没有匹配结果",
+            "info": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+            "infoEmpty": "显示第 0 至 0 项结果，共 0 项",
+            "infoFiltered": "(由 _MAX_ 项结果过滤)",
+            "infoPostFix": "",
+            "search": "搜索:",
+            "searchPlaceholder": "搜索...",
+            "url": "",
+            "emptyTable": "表中数据为空",
+            "loadingRecords": "载入中...",
+            "infoThousands": ",",
+            "paginate": {
+                "first": "首页",
+                "previous": "上页",
+                "next": "下页",
+                "last": "末页"
+            },
+            "aria": {
+                "paginate": {
+                    "first": "首页",
+                    "previous": "上页",
+                    "next": "下页",
+                    "last": "末页"
+                },
+                "sortAscending": "以升序排列此列",
+                "sortDescending": "以降序排列此列"
+            },
+            "thousands": "."
+        }
+    });
+
+</script>
+</html>

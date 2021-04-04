@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>播放 - 课程回放|莱西四中</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables@1.10.18/media/css/jquery.dataTables.min.css">
+    <script>
+        /**
+         * 判断是不是移动端
+         * @returns {boolean}
+         */
+        function isMobile() {
+            const userAgentInfo = navigator.userAgent;
+            const Agents = ["Android", "iPhone", "SymbianOS", "Windows Phone", "iPad", "iPod"];
+            let flag = true;
+
+            for (var v = 0; v < Agents.length; v++) {
+                if (userAgentInfo.indexOf(Agents[v]) > 0) {
+                    flag = false;
+                    break;
+                }
+            }
+            return !flag;
+        }
+
+        /**
+         * 判断是不是微信浏览器
+         * @returns {boolean}
+         */
+        function isWechat() {
+            return navigator.userAgent.toLowerCase().indexOf('micromessenger') !== -1
+        }
+        if (isWechat())
+        {
+            if (!isMobile())
+            {
+                alert("因微信内置浏览器版本过低,建议在上方工具栏\"用默认浏览器\"打开")
+            }
+        }
+        var p2pml = undefined;
+    </script>
+</head>
+<body>
+    <div id="container" class="container">
+        <div class="row clearfix">
+            <div class="col-md-12 column">
+                <div class="page-header">
+                    <h1>
+                        <a id="header-desc">播放</a> - 课程回放 <small>莱西四中</small>
+                    </h1>
+                </div>
+            </div>
+        </div>
+        <div class="row clearfix">
+            <div class="col-md-12 column">
+                <div id="dplayer"></div>
+            </div>
+        </div>
+        <div class="row clearfix">
+            <div class="col-md-12 column">
+                <h1>附件下载</h1>
+            </div>
+            <table id="main_table" class="table table-bordered table-hover table-striped">
+                <thead>
+                <tr>
+                    <th>
+                        #
+                    </th>
+                    <th>
+                        名称
+                    </th>
+                    <th>
+                        链接
+                    </th>
+                </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+
+</body>
+<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/p2p-media-loader-core@0.6.2/build/p2p-media-loader-core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@0.14.17/dist/hls.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/p2p-media-loader-hlsjs@0.6.2/build/p2p-media-loader-hlsjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables@1.10.18/media/js/jquery.dataTables.min.js"></script>
+
+
+<script>
+    let GINFO;
+    const API_PREFIX = "https://api-jun-sen.edu.oldtaoge.space:21286/apiv1/";
+    const CDN_PREFIX = "https://cdnn-jun-sen.edu.oldtaoge.space/"
+    // const API_PREFIX = "http://localhost:8080/";
+    let GCONFIG;
+    let tools = function () {
+        /**
+         * 内部工具函数
+         * 得到url中?=参数
+         * @param name
+         * @returns {string|null}
+         */
+        function getUrlParam(name) {
+            let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+            let r = window.location.search.substr(1).match(reg);  //匹配目标参数
+            if (r != null) return unescape(r[2]); return null; //返回参数值
+        }
+
+
+
+
+        return {
+            "getUrlParam": getUrlParam
+        }
+    };
+
+
+    let app = function () {
+        let DP;
+        /**
+         * 内部函数，创建播放器
+         * @param m3u8Url
+         * @constructor
+         */
+        function NewPlayer(m3u8Url) {
+            const p2pconfig = {
+                segments: {
+                    forwardSegmentCount: 4,
+                },
+                loader: {
+                    simultaneousHttpDownloads: 4,
+                    simultaneousP2PDownloads: 20,
+                    trackerAnnounce: [
+                        "wss://tracker.oldtaoge.space:21286"
+                    ],
+                    rtcConfig: {
+                        iceServers: [
+                            { urls: "stun:stun.oldtaoge.space" }
+                        ]
+                    }
+                }
+            };
+            let dplayerConfig = {
+                container: document.getElementById("dplayer"),
+                screenshot:true,
+                hotkey:true,
+                preload:'auto',
+                volume:1,
+            }
+            if (p2pml !== undefined)
+            {
+                if (Hls.isSupported() && p2pml.hlsjs.Engine.isSupported()) {
+                    dplayerConfig["video"]={
+                        url: m3u8Url,
+                        type: "customHls",
+                        customType: {
+                            "customHls": function (video, player) {
+                                const engine = new p2pml.hlsjs.Engine(p2pconfig);
+                                engine.on("peer_connect", peer => console.log("peer_connect", peer.id, peer.remoteAddress));
+                                engine.on("peer_close", peerId => console.log("peer_close", peerId));
+                                engine.on("segment_loaded", (segment, peerId) => console.log("segment_loaded from", peerId ? `peer ${peerId}` : "HTTP", segment.url));
+                                const hls = new Hls({
+                                    maxBufferLength: 1800,
+                                    maxBufferSize: "256MB",
+                                    loader: engine.createLoaderClass()
+                                });
+                                p2pml.hlsjs.initHlsJsPlayer(hls);
+                                hls.loadSource(video.src);
+                                hls.attachMedia(video);
+                            }
+                        }
+                    }
+                }
+            }
+            else if(Hls.isSupported()){
+                dplayerConfig["video"]={
+                    url: m3u8Url,
+                    type: "Hls"
+                }
+            } else {
+                $("#dplayer")[0].innerHTML = "<div class=loading><span class=spinner-text>您的浏览器不支持HLS，请升级您的浏览器</span><span class=spinner></span></div></div>";
+            }
+            DP = new DPlayer(dplayerConfig);
+        }
+
+
+
+        function initDatatable(data) {
+            $('#main_table').DataTable( {
+                "paging": true,
+                "info": true,
+                "lengthChange": false,
+                "ordering": false,
+                "processing": true,
+                "searching": false,
+                "deferRender": true,
+                data: data,
+                columns: [
+                    { data: 'name',
+                        render: function (data, type, row, meta) {
+                            return tools().getUrlParam("id")
+                        }},
+                    { data: 'name' },
+                    { data: 'path',
+                        render: function (data, type, row, meta) {
+                            return "<a href=\"" + CDN_PREFIX + "/" + data + "?raw&proxied" + "\">下载链接</a>"
+                        }},
+                ],
+                language:{
+                    "processing": "处理中...",
+                    "lengthMenu": "显示 _MENU_ 项结果",
+                    "zeroRecords": "没有匹配结果",
+                    "info": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+                    "infoEmpty": "显示第 0 至 0 项结果，共 0 项",
+                    "infoFiltered": "(由 _MAX_ 项结果过滤)",
+                    "infoPostFix": "",
+                    "search": "搜索:",
+                    "searchPlaceholder": "搜索...",
+                    "url": "",
+                    "emptyTable": "表中数据为空",
+                    "loadingRecords": "载入中...",
+                    "infoThousands": ",",
+                    "paginate": {
+                        "first": "首页",
+                        "previous": "上页",
+                        "next": "下页",
+                        "last": "末页"
+                    },
+                    "aria": {
+                        "paginate": {
+                            "first": "首页",
+                            "previous": "上页",
+                            "next": "下页",
+                            "last": "末页"
+                        },
+                        "sortAscending": "以升序排列此列",
+                        "sortDescending": "以降序排列此列"
+                    },
+                    "thousands": "."
+                }
+            });
+        }
+
+        function init() {
+            $.get(API_PREFIX + "lessons/" + _id, function (response) {
+                GINFO = response.data;
+                $("#header-desc")[0].innerText = GINFO.subject + " " + GINFO.content;
+                $("title").html(GINFO.subject + " " + GINFO.content + " - 课程回放|莱西四中");
+                new NewPlayer(CDN_PREFIX + GINFO.video + "?raw&proxied")
+                initDatatable(JSON.parse(GINFO.file))
+            })
+        }
+        return {
+            "init": init
+        }
+    };
+
+    _id = tools().getUrlParam("id")
+    console.log(app().init())
+    // $(function(){})
+
+</script>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-QKDB6Z9GW8"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-QKDB6Z9GW8');
+</script>
+</html>
